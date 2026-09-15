@@ -60,6 +60,8 @@ export class TaskRunner implements vscode.Disposable {
     /** Keys we terminated ourselves, so a stop is not reported as a failure. */
     private readonly stopping = new Set<string>();
     private readonly composites = new Map<string, CompositeWatch>();
+    /** In-flight group runs, so stopping one can cancel the loop and not just a task. */
+    private readonly groupRuns = new Map<string, vscode.CancellationTokenSource>();
 
     readonly onDidChangeRunning = this.changed.event;
     readonly onDidFail = this.failedEvent.event;
@@ -89,6 +91,10 @@ export class TaskRunner implements vscode.Disposable {
     dispose(): void {
         for (const watch of this.composites.values()) {
             clearTimeout(watch.timer);
+        }
+        for (const source of this.groupRuns.values()) {
+            source.cancel();
+            source.dispose();
         }
         this.disposables.forEach((d) => d.dispose());
         this.changed.dispose();
@@ -131,11 +137,13 @@ export class TaskRunner implements vscode.Disposable {
 
     async stop(entry: TaskEntry): Promise<void> {
         if (entry.isComposite) {
-            // Its steps are VS Code's executions. Terminate whichever are running and let
-            // the watch settle from the events that follow.
+            // Terminating only the running step lets VS Code start the next one - the
+            // composite's own execution is what drives the chain, so it has to go too.
             const watch = this.composites.get(entry.id);
             for (const execution of vscode.tasks.taskExecutions) {
-                if (watch?.pending.has(execution.task.name)) {
+                const isTheComposite = this.resolveEntry(execution.task)?.id === entry.id;
+                const isOneOfItsSteps = watch?.pending.has(execution.task.name) ?? false;
+                if (isTheComposite || isOneOfItsSteps) {
                     this.stopping.add(this.historyKey(execution.task));
                     execution.terminate();
                 }
@@ -166,22 +174,52 @@ export class TaskRunner implements vscode.Disposable {
      * first failure, because these groups are usually pipelines where a later step
      * consumes an earlier step's output.
      */
+    /** Cancel an in-flight group run started under this key. */
+    cancelGroup(runKey: string): void {
+        this.groupRuns.get(runKey)?.cancel();
+    }
+
     async runGroup(
         entries: readonly TaskEntry[],
         mode: 'sequential' | 'parallel',
-        groupLabel: string
+        groupLabel: string,
+        runKey = groupLabel
     ): Promise<boolean> {
         if (entries.length === 0) {
             return true;
         }
 
+        // Its own source, so stopping the group from the tree cancels the loop. Without
+        // it, terminating the running task only lets the next one start.
+        const source = new vscode.CancellationTokenSource();
+        this.groupRuns.set(runKey, source);
+
+        try {
+            return await this.runGroupWithin(entries, mode, groupLabel, source);
+        } finally {
+            this.groupRuns.delete(runKey);
+            source.dispose();
+        }
+    }
+
+    private async runGroupWithin(
+        entries: readonly TaskEntry[],
+        mode: 'sequential' | 'parallel',
+        groupLabel: string,
+        source: vscode.CancellationTokenSource
+    ): Promise<boolean> {
         return await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
                 title: `Task Hierarchy: ${groupLabel}`,
                 cancellable: true,
             },
-            async (progress, token) => {
+            async (progress, progressToken) => {
+                // The notification's own cancel button feeds the same source, so there is
+                // one thing to check no matter where the stop came from.
+                progressToken.onCancellationRequested(() => source.cancel());
+                const token = source.token;
+
                 if (mode === 'parallel') {
                     progress.report({ message: `${entries.length} tasks in parallel` });
                     const results = await Promise.all(

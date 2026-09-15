@@ -314,3 +314,69 @@ test('a composite whose step failed still reads as failed after VS Code ends it'
 
     assert.equal(runner.lastRun(composite)?.status, 'failed');
 });
+
+test('stopping a group cancels the run, not just the task that is executing', async () => {
+    // Terminating the running task makes runAndWait resolve, and the loop moves on to
+    // the next one - so "stop" on a parent stopped one task and started another.
+    const { runner, entries, stub } = await nativeWorkspace([
+        { label: 'first', type: 'shell', command: 'echo one' },
+        { label: 'second', type: 'shell', command: 'echo two' },
+        { label: 'third', type: 'shell', command: 'echo three' },
+    ]);
+
+    const started = [];
+    stub.tasks._listeners.start.push(({ execution }) => {
+        started.push(execution.task.name);
+        // Stop the group while the first task is running, the way the tree button does.
+        if (execution.task.name === 'first') {
+            runner.cancelGroup('group-node-id');
+        }
+        setTimeout(() => stub.tasks._finish(execution, 0), 0);
+    });
+
+    await runner.runGroup(entries, 'sequential', 'everything', 'group-node-id');
+
+    assert.deepEqual(started, ['first'], 'nothing after the cancelled task should start');
+});
+
+test('stopping a composite terminates the composite, not only its running step', async () => {
+    // VS Code drives the chain from the composite's own execution; killing a step alone
+    // just lets it start the next one.
+    const { runner, byLabel, stub } = await nativeWorkspace(PIPELINE);
+    const composite = byLabel('staging:api');
+
+    const terminated = [];
+    stub.tasks.executeTask = async (task) => {
+        const execution = {
+            task,
+            terminate() {
+                terminated.push(task.name);
+            },
+        };
+        stub.tasks.taskExecutions.push(execution);
+        stub.tasks._fire('start', { execution });
+        return execution;
+    };
+
+    await runner.run(composite);
+    await stub.tasks.executeTask(byLabel('clean').task); // VS Code starts the first step
+    await runner.stop(composite);
+
+    assert.ok(terminated.includes('staging:api'), 'the composite itself must be terminated');
+    assert.ok(terminated.includes('clean'), 'and the step that was running');
+});
+
+test('a new run clears what the previous one left on screen', async () => {
+    const { runner, entry, stub } = await setup();
+
+    await runner.run(entry);
+    stub.tasks._finish(stub.tasks.taskExecutions[0], 1);
+    assert.equal(runner.lastRun(entry)?.status, 'failed');
+
+    // What the tree does before starting a run, so old marks do not sit beside a new one.
+    runner.history.forget([entry.id]);
+    assert.equal(runner.lastRun(entry), undefined, 'the previous result is gone');
+
+    await runner.run(entry);
+    assert.equal(runner.lastRun(entry)?.status, 'running');
+});

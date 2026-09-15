@@ -18,6 +18,9 @@ First release.
 - **Each task shows its last run** — how long it took, how long ago, and a mark if it
   failed. Clicking one shows the detail; a failure raises a notification naming the task.
 - **Filter** across labels, descriptions and tags.
+- Starting a run clears the previous run's marks first, so what is on screen belongs to
+  the run in front of you. Stopping a group cancels the run rather than only the task
+  that happens to be executing.
 - **Labels are shown exactly as written.** The tags decide where a task sits, not what it
   is called. `taskHierarchy.shortenLabels` will trim the parts a task's levels already
   state, and leaves a label in full if trimming it would stop telling two tasks apart.

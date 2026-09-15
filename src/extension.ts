@@ -108,6 +108,7 @@ export function activate(context: vscode.ExtensionContext): void {
     register('taskHierarchy.runTask', async (node: Node) => {
         const entry = entryOf(node);
         if (entry) {
+            resetStatuses(runner, provider, affectedBy(entry, provider));
             await runner.run(entry);
         }
     });
@@ -122,6 +123,9 @@ export function activate(context: vscode.ExtensionContext): void {
     register('taskHierarchy.runGroup', (node: Node) => runGroup(node, provider, runner));
 
     register('taskHierarchy.stopGroup', async (node: Node) => {
+        // Cancel the run itself first. Terminating the tasks alone only ends the one
+        // that is executing, and the group moves on to the next.
+        runner.cancelGroup(node.id);
         for (const entry of tasksUnder(node)) {
             await runner.stop(entry);
         }
@@ -198,7 +202,33 @@ async function runGroup(
         }
     }
 
-    await runner.runGroup(entries, provider.groupRunMode, node.label);
+    // Clear what the last run left behind, so the marks on screen belong to this run.
+    resetStatuses(runner, provider, entries);
+    await runner.runGroup(entries, provider.groupRunMode, node.label, node.id);
+}
+
+/**
+ * The tasks whose status a run invalidates: the task itself, and for one that only lists
+ * other tasks, the steps it is about to run.
+ */
+function affectedBy(entry: TaskEntry, provider: TaskHierarchyProvider): TaskEntry[] {
+    if (!entry.isComposite) {
+        return [entry];
+    }
+    const steps = provider.allEntries.filter(
+        (candidate) =>
+            candidate.fileKey === entry.fileKey && entry.dependsOn.includes(candidate.label)
+    );
+    return [entry, ...steps];
+}
+
+function resetStatuses(
+    runner: TaskRunner,
+    provider: TaskHierarchyProvider,
+    entries: readonly TaskEntry[]
+): void {
+    runner.history.forget(entries.map((entry) => entry.id));
+    provider.rebuild();
 }
 
 async function reveal(entry: TaskEntry | undefined): Promise<void> {

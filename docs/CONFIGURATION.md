@@ -251,6 +251,14 @@ long ago, and a red ✗ if it exited non-zero. A failure also raises a notificat
 the task — turn that off with `taskHierarchy.notifyOnFailure` — and is written to the
 **Task Hierarchy** output channel either way.
 
+Starting a run clears what the previous one left behind, for that task and — when it
+only lists other tasks — for the steps it is about to run, so the marks on screen always
+belong to the run in front of you.
+
+Stopping a group stops the group: the run is cancelled, so nothing after the task being
+terminated starts. Stopping a task that only lists other tasks terminates it as well as
+its running step, since that is what VS Code drives the sequence from.
+
 Clicking a task shows its last run: status, exit code, when it started, how long it took,
 and the command that ran. A task that has never run opens its declaration instead.
 `taskHierarchy.clickAction` changes that.

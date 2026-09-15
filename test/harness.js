@@ -203,6 +203,29 @@ function makeVscodeStub({ folders = [], nativeTasks = [], settings = {} } = {}) 
         Task: FakeTask,
         ShellExecution: FakeShellExecution,
         ProcessExecution: FakeProcessExecution,
+        // A real one: cancelling a group run is the thing being tested, so a stub that
+        // never fires would make the test pass for the wrong reason.
+        CancellationTokenSource: class {
+            constructor() {
+                this.listeners = [];
+                this.token = {
+                    isCancellationRequested: false,
+                    onCancellationRequested: (listener) => {
+                        this.listeners.push(listener);
+                        return { dispose: () => {} };
+                    },
+                };
+            }
+            cancel() {
+                this.token.isCancellationRequested = true;
+                for (const listener of [...this.listeners]) {
+                    listener();
+                }
+            }
+            dispose() {
+                this.listeners = [];
+            }
+        },
         TaskScope: { Global: 1, Workspace: 2 },
         ProgressLocation: { SourceControl: 1, Window: 10, Notification: 15 },
         TaskRevealKind: { Always: 1, Silent: 2, Never: 3 },

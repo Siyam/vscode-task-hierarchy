@@ -88,6 +88,20 @@ export class RunHistory {
         void this.store?.update(STORAGE_KEY, []);
     }
 
+    /**
+     * Drop the records for these tasks, so a new run starts from a clean slate rather
+     * than leaving the previous run's ticks and crosses standing next to it.
+     */
+    forget(keys: Iterable<string>): void {
+        let removed = false;
+        for (const key of keys) {
+            removed = this.records.delete(key) || removed;
+        }
+        if (removed) {
+            void this.store?.update(STORAGE_KEY, [...this.records.values()]);
+        }
+    }
+
     private set(record: RunRecord): RunRecord {
         this.records.set(record.key, record);
 
