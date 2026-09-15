@@ -75,8 +75,13 @@ export class TaskRunner implements vscode.Disposable {
         }
         this.disposables.push(
             vscode.tasks.onDidStartTask((e) => {
+                const key = this.historyKey(e.execution.task);
+                // A run starting cancels any pending stop against it. Belt and braces:
+                // a flag that outlives the run it belonged to would otherwise make a
+                // perfectly good run report itself stopped.
+                this.stopping.delete(key);
                 this.track(e.execution);
-                this.history.started(this.historyKey(e.execution.task), e.execution.task.name);
+                this.history.started(key, e.execution.task.name);
                 this.changed.fire();
             }),
             // Carries the exit code, and fires before onDidEndTask. Tasks with no process
@@ -151,10 +156,19 @@ export class TaskRunner implements vscode.Disposable {
             return;
         }
 
+        const executions = this.executions.get(entryExecutionKey(entry)) ?? [];
+        if (executions.length === 0) {
+            // Nothing is running, so there is nothing to stop. Marking it anyway leaves a
+            // flag no end event will ever clear, and the task's next successful run reads
+            // it and reports itself stopped - which is what stopping a whole group did to
+            // every task under it that happened to be idle.
+            return;
+        }
+
         // Marked before terminating so the end event reports "stopped" rather than
         // whatever exit code killing the process happens to produce.
         this.stopping.add(entry.id);
-        for (const execution of this.executions.get(entryExecutionKey(entry)) ?? []) {
+        for (const execution of executions) {
             execution.terminate();
         }
     }

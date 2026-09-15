@@ -380,3 +380,32 @@ test('a new run clears what the previous one left on screen', async () => {
     await runner.run(entry);
     assert.equal(runner.lastRun(entry)?.status, 'running');
 });
+
+test('stopping a task that is not running leaves nothing behind', async () => {
+    // Stopping a group calls stop() on every task under it, most of which are idle.
+    // Marking those as stopping left a flag no end event would ever clear, and the next
+    // successful run of that task reported itself stopped with an exit code of 0.
+    const { runner, entry, stub } = await setup();
+
+    await runner.stop(entry); // never started
+    await runner.run(entry);
+    stub.tasks._finish(stub.tasks.taskExecutions[0], 0);
+
+    const run = runner.lastRun(entry);
+    assert.equal(run?.exitCode, 0);
+    assert.equal(run?.status, 'ok', 'exit code 0 is a success, not a stop');
+});
+
+test('a stop that never landed does not follow the task into its next run', async () => {
+    const { runner, entry, stub } = await setup();
+
+    await runner.run(entry);
+    await runner.stop(entry);
+    stub.tasks._finish(stub.tasks.taskExecutions[0], 137);
+    assert.equal(runner.lastRun(entry)?.status, 'stopped', 'that one really was stopped');
+
+    // The next run is its own; it must not inherit the previous run's stop.
+    await runner.run(entry);
+    stub.tasks._finish(stub.tasks.taskExecutions[0], 0);
+    assert.equal(runner.lastRun(entry)?.status, 'ok');
+});
