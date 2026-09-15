@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest something the extension should do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: >
+        The situation rather than the solution — it often turns out there is a simpler
+        way to get there, or that the right fix is somewhere else entirely.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What did you have in mind?
+      description: Optional. How you imagine it working.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      description: >
+        This extension is a view over the tasks you already have. It does not run tasks
+        itself — VS Code does — so anything that would change how a task executes is
+        likely out of scope.
+      options:
+        - label: This is about how tasks are shown, found or grouped, not how they run.

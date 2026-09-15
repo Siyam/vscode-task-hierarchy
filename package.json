@@ -1,0 +1,518 @@
+{
+  "name": "vscode-task-hierarchy",
+  "displayName": "Task Hierarchy",
+  "description": "Browse and run VS Code tasks in a hierarchical tree. Tag a task's detail with @name:value and the tag order becomes the nesting.",
+  "version": "0.6.1",
+  "publisher": "SMIITSolutionsInc",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1D4ED8",
+    "theme": "dark"
+  },
+  "pricing": "Free",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "tasks",
+    "task runner",
+    "tree",
+    "grouping",
+    "monorepo"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Siyam/vscode-task-hierarchy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Siyam/vscode-task-hierarchy/issues"
+  },
+  "homepage": "https://github.com/Siyam/vscode-task-hierarchy#readme",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Task Hierarchy discovers tasks.json files anywhere in the workspace and can run the commands they declare, so it only operates in a trusted workspace."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Running a task needs a real filesystem and a shell, which a virtual workspace does not provide."
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "taskHierarchy",
+          "title": "Task Hierarchy",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "taskHierarchy": [
+        {
+          "id": "taskHierarchy.tree",
+          "name": "Tasks",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "taskHierarchy.tree",
+        "when": "taskHierarchy.loaded",
+        "contents": "No tasks.json files were found anywhere in this workspace.\n\nTask Hierarchy searches every folder, not just the workspace root, so a folder of checkouts still shows each project's tasks.\n\n[Run diagnostics](command:taskHierarchy.showDiagnostics)\n[Create a tasks.json](command:taskHierarchy.openTasksJson)\n[Search again](command:taskHierarchy.refresh)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "taskHierarchy.refresh",
+        "title": "Reload Tasks",
+        "category": "Task Hierarchy",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "taskHierarchy.setFilter",
+        "title": "Filter Tasks\u2026",
+        "category": "Task Hierarchy",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "taskHierarchy.clearFilter",
+        "title": "Clear Filter",
+        "category": "Task Hierarchy",
+        "icon": "$(filter-filled)"
+      },
+      {
+        "command": "taskHierarchy.runTask",
+        "title": "Run Task",
+        "category": "Task Hierarchy",
+        "icon": "$(play)"
+      },
+      {
+        "command": "taskHierarchy.stopTask",
+        "title": "Stop Task",
+        "category": "Task Hierarchy",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "taskHierarchy.runGroup",
+        "title": "Run All Tasks in Group",
+        "category": "Task Hierarchy",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "taskHierarchy.stopGroup",
+        "title": "Stop All Running Tasks in Group",
+        "category": "Task Hierarchy",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "taskHierarchy.stopAll",
+        "title": "Stop All Running Tasks",
+        "category": "Task Hierarchy",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "taskHierarchy.revealInTasksJson",
+        "title": "Go to Definition in tasks.json",
+        "category": "Task Hierarchy",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "taskHierarchy.editTags",
+        "title": "Edit Tags\u2026",
+        "category": "Task Hierarchy",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "taskHierarchy.annotateFromLabels",
+        "title": "Annotate Tasks from Labels\u2026",
+        "category": "Task Hierarchy",
+        "icon": "$(wand)"
+      },
+      {
+        "command": "taskHierarchy.openTasksJson",
+        "title": "Open tasks.json\u2026",
+        "category": "Task Hierarchy",
+        "icon": "$(json)"
+      },
+      {
+        "command": "taskHierarchy.addProjectFolder",
+        "title": "Add Project Folder to Workspace",
+        "category": "Task Hierarchy",
+        "icon": "$(root-folder-opened)"
+      },
+      {
+        "command": "taskHierarchy.showRunDetails",
+        "title": "Show Last Run Details",
+        "category": "Task Hierarchy",
+        "icon": "$(output)"
+      },
+      {
+        "command": "taskHierarchy.clearRunHistory",
+        "title": "Clear Run History",
+        "category": "Task Hierarchy",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "taskHierarchy.showDiagnostics",
+        "title": "Show Diagnostics",
+        "category": "Task Hierarchy",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "taskHierarchy.runTask",
+          "when": "false"
+        },
+        {
+          "command": "taskHierarchy.stopTask",
+          "when": "false"
+        },
+        {
+          "command": "taskHierarchy.runGroup",
+          "when": "false"
+        },
+        {
+          "command": "taskHierarchy.stopGroup",
+          "when": "false"
+        },
+        {
+          "command": "taskHierarchy.revealInTasksJson",
+          "when": "false"
+        },
+        {
+          "command": "taskHierarchy.editTags",
+          "when": "false"
+        },
+        {
+          "command": "taskHierarchy.showRunDetails",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "taskHierarchy.setFilter",
+          "when": "view == taskHierarchy.tree && !taskHierarchy.filtered",
+          "group": "navigation@1"
+        },
+        {
+          "command": "taskHierarchy.clearFilter",
+          "when": "view == taskHierarchy.tree && taskHierarchy.filtered",
+          "group": "navigation@1"
+        },
+        {
+          "command": "taskHierarchy.refresh",
+          "when": "view == taskHierarchy.tree",
+          "group": "navigation@3"
+        },
+        {
+          "command": "taskHierarchy.stopAll",
+          "when": "view == taskHierarchy.tree && taskHierarchy.anyRunning",
+          "group": "1_stop@1"
+        },
+        {
+          "command": "taskHierarchy.annotateFromLabels",
+          "when": "view == taskHierarchy.tree",
+          "group": "9_setup@1"
+        },
+        {
+          "command": "taskHierarchy.openTasksJson",
+          "when": "view == taskHierarchy.tree",
+          "group": "9_setup@2"
+        },
+        {
+          "command": "taskHierarchy.addProjectFolder",
+          "when": "view == taskHierarchy.tree",
+          "group": "9_setup@3"
+        },
+        {
+          "command": "taskHierarchy.showDiagnostics",
+          "when": "view == taskHierarchy.tree",
+          "group": "9_setup@4"
+        },
+        {
+          "command": "taskHierarchy.clearRunHistory",
+          "when": "view == taskHierarchy.tree",
+          "group": "9_setup@5"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "taskHierarchy.runTask",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^task/",
+          "group": "inline@1"
+        },
+        {
+          "command": "taskHierarchy.stopTask",
+          "when": "view == taskHierarchy.tree && viewItem == taskRunning",
+          "group": "inline@2"
+        },
+        {
+          "command": "taskHierarchy.runGroup",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^group/",
+          "group": "inline@1"
+        },
+        {
+          "command": "taskHierarchy.stopGroup",
+          "when": "view == taskHierarchy.tree && viewItem == groupRunning",
+          "group": "inline@2"
+        },
+        {
+          "command": "taskHierarchy.runTask",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^task/",
+          "group": "1_run@1"
+        },
+        {
+          "command": "taskHierarchy.stopTask",
+          "when": "view == taskHierarchy.tree && viewItem == taskRunning",
+          "group": "1_run@2"
+        },
+        {
+          "command": "taskHierarchy.runGroup",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^group/",
+          "group": "1_run@1"
+        },
+        {
+          "command": "taskHierarchy.editTags",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^task/",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "taskHierarchy.revealInTasksJson",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^task/",
+          "group": "2_edit@2"
+        },
+        {
+          "command": "taskHierarchy.addProjectFolder",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^task/",
+          "group": "3_folder@1"
+        },
+        {
+          "command": "taskHierarchy.showRunDetails",
+          "when": "view == taskHierarchy.tree && viewItem =~ /^task/",
+          "group": "1_run@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Task Hierarchy",
+      "properties": {
+        "taskHierarchy.tagPrefix": {
+          "type": "string",
+          "default": "@",
+          "markdownDescription": "Character that introduces a grouping tag inside a task's `detail` string. With the default, `@env:staging` adds a level named `env` with the value `staging`.",
+          "scope": "resource"
+        },
+        "taskHierarchy.tagIcons": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "markdownDescription": "Maps a tag name to a [Codicon](https://microsoft.github.io/vscode-codicons/dist/codicon.html) id for that level's nodes, e.g. `{ \"env\": \"server-environment\" }`. Unmapped levels use a folder icon.",
+          "scope": "resource"
+        },
+        "taskHierarchy.tagValueIcons": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "markdownDescription": "Maps a specific `name:value` pair to a Codicon id, overriding `#taskHierarchy.tagIcons#` \u2014 e.g. `{ \"env:production\": \"flame\" }`.",
+          "scope": "resource"
+        },
+        "taskHierarchy.sortTagValues": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "markdownDescription": "Sibling order within a level, e.g. `{ \"env\": [\"local\", \"staging\", \"production\"] }`. Values not listed sort alphabetically after the listed ones. Levels with no entry sort alphabetically.",
+          "scope": "resource"
+        },
+        "taskHierarchy.ungroupedLabel": {
+          "type": "string",
+          "default": "Ungrouped",
+          "description": "Name of the node collecting tasks that declare none of the grouping facets.",
+          "scope": "resource"
+        },
+        "taskHierarchy.shortenLabels": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Strip facet values already implied by a task's ancestor groups from its leaf label, so `publish: web-api (staging)` shows as `publish` under **staging \u203a web-api**.",
+          "scope": "resource"
+        },
+        "taskHierarchy.collapseSingleChildGroups": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Merge a group that has exactly one child group into that child, showing `staging \u203a acme` as a single node.",
+          "scope": "resource"
+        },
+        "taskHierarchy.showProjectFolders": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "Only when more than one project folder has tasks.",
+            "Always show the project folder level.",
+            "Never show it; tasks from every project are pooled together."
+          ],
+          "default": "auto",
+          "markdownDescription": "Add a top-level node per project folder - the folder holding each `.vscode/tasks.json`.",
+          "scope": "resource"
+        },
+        "taskHierarchy.hideUnannotatedTasks": {
+          "type": "boolean",
+          "default": false,
+          "description": "Omit tasks that declare no facets instead of listing them under the ungrouped node.",
+          "scope": "resource"
+        },
+        "taskHierarchy.clickAction": {
+          "type": "string",
+          "enum": [
+            "runDetails",
+            "reveal",
+            "run",
+            "none"
+          ],
+          "enumDescriptions": [
+            "Show what happened last time the task ran; open its declaration if it has never run.",
+            "Open the task's declaration in tasks.json.",
+            "Run the task immediately.",
+            "Do nothing; use the inline play button or the context menu."
+          ],
+          "default": "runDetails",
+          "markdownDescription": "What a single click on a task does. It deliberately does not run the task by default \u2014 the inline play button always does that.",
+          "scope": "resource"
+        },
+        "taskHierarchy.notifyOnFailure": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show a notification naming the task when one exits non-zero. Failures are written to the **Task Hierarchy** output channel either way.",
+          "scope": "resource"
+        },
+        "taskHierarchy.groupRunMode": {
+          "type": "string",
+          "enum": [
+            "sequential",
+            "parallel"
+          ],
+          "default": "sequential",
+          "markdownDescription": "How **Run All Tasks in Group** executes its tasks. `sequential` waits for each task to finish and stops on the first failure.",
+          "scope": "resource"
+        },
+        "taskHierarchy.confirmGroupRunThreshold": {
+          "type": "number",
+          "default": 1,
+          "markdownDescription": "Ask for confirmation before **Run All Tasks in Group** when it would start more than this many tasks. Set to `-1` to never confirm."
+        },
+        "taskHierarchy.discoveryInclude": {
+          "type": "string",
+          "default": "**/.vscode/tasks.json",
+          "markdownDescription": "Glob for finding task files. VS Code itself only reads `.vscode/tasks.json` at a workspace folder root; this is what lets a folder of checkouts show every project's tasks.",
+          "scope": "resource"
+        },
+        "taskHierarchy.discoveryExclude": {
+          "type": "string",
+          "default": "**/{node_modules,bower_components,.git,bin,obj,dist,out,build,target,vendor,.venv,venv,Pods}/**",
+          "markdownDescription": "Glob excluded from the search. Set to an empty string to search everything.",
+          "scope": "resource"
+        },
+        "taskHierarchy.discoveryMaxFiles": {
+          "type": "number",
+          "default": 200,
+          "markdownDescription": "Stop after this many tasks.json files, so a very large tree cannot stall the view.",
+          "scope": "resource"
+        },
+        "taskHierarchy.derivationRules": {
+          "type": "array",
+          "markdownDescription": "Regexes that read grouping tags out of existing task labels, used by **Annotate Tasks from Labels\u2026**. Empty until you write them, because the levels that matter are particular to your repo. **Rule order is the hierarchy** \u2014 the first rule becomes the outermost level. A level a task already declares is never overwritten. The README has a worked example.",
+          "scope": "resource",
+          "items": {
+            "type": "object",
+            "required": [
+              "key",
+              "pattern"
+            ],
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Regular expression matched against the task label."
+              },
+              "value": {
+                "type": "string",
+                "default": "$1",
+                "description": "Replacement template for the value; $1..$9 refer to capture groups."
+              },
+              "map": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Canonicalises the extracted value, e.g. prod -> production. Keys are matched lowercased."
+              },
+              "caseSensitive": {
+                "type": "boolean",
+                "default": false,
+                "description": "Match case-sensitively."
+              },
+              "key": {
+                "type": "string",
+                "description": "Level name written before the colon. Documentation for whoever reads the file."
+              },
+              "fallback": {
+                "type": "string",
+                "description": "Value used when the pattern matches nothing, so this level stays uniform across every task. Without it, a task lacking this level starts its path one level in."
+              }
+            }
+          },
+          "default": []
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run check-types && node esbuild.mjs --production && node --test test/bundle.smoke.js",
+    "compile": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "tsc -p . --outDir out && node esbuild.mjs && node --test \"out/test/*.test.js\" \"test/*.test.js\" test/bundle.smoke.js",
+    "package": "vsce package",
+    "install-local": "bash scripts/install-local.sh"
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0",
+    "js-yaml": "4.1.0",
+    "typescript": "^5.6.0"
+  }
+}

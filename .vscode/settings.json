@@ -1,0 +1,25 @@
+{
+    // The extension's own settings, applied to its own tasks - so this repo is a working
+    // example of what the README describes, and so the view has something to show when
+    // you open it here.
+    //
+    // The levels come from .vscode/tasks.json: @stage:... then @action:...
+
+    // Icon for every node at a level, when no more specific one applies.
+    "taskHierarchy.tagIcons": {
+        "stage": "milestone",
+        "action": "gear"
+    },
+
+    // Icon for one specific name:value, overriding the level above.
+    "taskHierarchy.tagValueIcons": {
+        "stage:develop": "code",
+        "stage:verify": "beaker",
+        "stage:ship": "rocket"
+    },
+
+    // Alphabetical would read develop, ship, verify - which is not the order you do them in.
+    "taskHierarchy.sortTagValues": {
+        "stage": ["develop", "verify", "ship"]
+    }
+}

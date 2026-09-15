@@ -1,0 +1,80 @@
+{
+    // This file is also the extension's own dogfood: the @tags below nest these tasks
+    // develop / verify / ship, and reordering the tags on any line re-nests that task.
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "npm: compile",
+            "type": "npm",
+            "script": "compile",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "panel": "shared" },
+            "detail": "@stage:develop @action:build Dev bundle to dist/extension.js"
+        },
+        {
+            "label": "npm: watch",
+            "type": "npm",
+            "script": "watch",
+            "isBackground": true,
+            // A background task needs a background matcher, or VS Code never decides the
+            // task has "finished" starting and anything depending on it hangs.
+            "problemMatcher": {
+                "owner": "esbuild",
+                "pattern": { "regexp": "^$" },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "\\[watch\\] build started",
+                    "endsPattern": "\\[watch\\] build finished"
+                }
+            },
+            "presentation": { "reveal": "always", "panel": "dedicated" },
+            "detail": "@stage:develop @action:watch Rebuild on save"
+        },
+        {
+            "label": "npm: check-types",
+            "type": "npm",
+            "script": "check-types",
+            "problemMatcher": "$tsc",
+            "detail": "@stage:verify @action:types"
+        },
+        {
+            "label": "npm: lint",
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": [],
+            "detail": "@stage:verify @action:lint"
+        },
+        {
+            "label": "npm: test",
+            "type": "npm",
+            "script": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated" },
+            "detail": "@stage:verify @action:test Unit tests, the workspace matrix and the bundle load test"
+        },
+        {
+            "label": "verify: everything",
+            "dependsOn": ["npm: check-types", "npm: lint", "npm: test"],
+            "dependsOrder": "sequence",
+            "problemMatcher": [],
+            "detail": "@stage:verify @action:all What CI runs"
+        },
+        {
+            "label": "npm: package",
+            "type": "npm",
+            "script": "package",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated" },
+            "detail": "@stage:ship @action:package Build the .vsix only"
+        },
+        {
+            "label": "npm: install-local",
+            "type": "npm",
+            "script": "install-local",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated" },
+            "detail": "@stage:ship @action:install Package and install into VS Code, then reload the window"
+        }
+    ]
+}

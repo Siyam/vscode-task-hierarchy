@@ -1,0 +1,56 @@
+# Runs on every push and pull request. Builds and tests, and uploads the packaged
+# extension so a build can be installed and tried before anything is released.
+#
+# This workflow has no credentials of any kind and cannot reach the Marketplace.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+    tags-ignore: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Type-checks, builds the bundle, and runs every test - including the smoke test
+      # that loads the built bundle, which is the one that catches a packaging fault.
+      - name: Test
+        run: npm test
+
+      # vscode:prepublish re-runs the type check, builds the production bundle and load
+      # tests it, so a bundle that cannot activate fails here rather than shipping.
+      - name: Package
+        run: npx @vscode/vsce package --out task-hierarchy.vsix
+
+      - name: Report package contents
+        run: npx @vscode/vsce ls --tree
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: task-hierarchy-vsix-${{ github.sha }}
+          path: task-hierarchy.vsix
+          # Long enough to test a branch build without keeping every build forever.
+          retention-days: 14

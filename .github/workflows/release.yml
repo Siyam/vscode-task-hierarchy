@@ -1,0 +1,80 @@
+# Cuts a GitHub Release when a v* tag is pushed, with the packaged extension attached.
+#
+# This does NOT publish to the Marketplace. It exists so a build can be reviewed and
+# installed from a real release before anyone decides to ship it. Publishing is a
+# separate, manually approved workflow (publish.yml) that takes the .vsix built here.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and attach to a GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # A tag that disagrees with package.json would publish a version nobody named, and
+      # the Marketplace rejects a duplicate version anyway - so fail here, not there.
+      - name: Check the tag matches package.json
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${pkg_version}."
+            echo "Bump package.json to ${tag_version}, or retag as v${pkg_version}."
+            exit 1
+          fi
+          echo "Releasing version ${pkg_version}."
+
+      - run: npm run lint
+      - run: npm test
+
+      - name: Package
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          npx @vscode/vsce package --out "task-hierarchy-${version}.vsix"
+
+      # Pre-release by default: a GitHub Release here means "ready to try", not "shipped".
+      # Promote it in the GitHub UI once you are happy with it.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          notes_file="$(mktemp)"
+          {
+            echo "Install this build to try it before it reaches the Marketplace:"
+            echo
+            echo '```sh'
+            echo "gh release download ${GITHUB_REF_NAME} --pattern '*.vsix'"
+            echo "code --install-extension task-hierarchy-${version}.vsix --force"
+            echo '```'
+            echo
+            echo "Then reload the window. Publishing to the Marketplace is a separate,"
+            echo "manually approved step - see the Publish workflow."
+            echo
+            if [ -f CHANGELOG.md ]; then
+              echo "---"
+              echo
+              awk '/^## /{ if (seen) exit; seen=1 } seen' CHANGELOG.md
+            fi
+          } > "$notes_file"
+
+          gh release create "${GITHUB_REF_NAME}" \
+            "task-hierarchy-${version}.vsix" \
+            --title "v${version}" \
+            --notes-file "$notes_file" \
+            --prerelease

@@ -1,0 +1,40 @@
+<!--
+  Source for media/icon.png, the Marketplace listing icon. Rendered with:
+      rsvg-convert -w 128 -h 128 media/marketplace-icon.svg -o media/icon.png
+
+  Kept separate from media/icon.svg, which is the activity-bar icon: that one has to be
+  monochrome line art using currentColor so VS Code can tint it for the active/inactive
+  and light/dark states. This one is a fixed full-colour square and is never tinted.
+
+  Drawn directly in 128-unit coordinates rather than scaling a 24-unit glyph, so the
+  spine and the branches can be placed against the node edges exactly instead of
+  crossing through them.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4C8DFF"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+
+  <g fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- The parent group. Its spine leaves the bottom edge, so nothing crosses the box. -->
+    <rect x="16" y="15" width="36" height="20" rx="6"/>
+
+    <!-- Spine down the left, stopping at the last branch. -->
+    <path d="M34 35v67"/>
+
+    <!-- Three branches out to the grouped children. Centres are 26 apart, which clears
+         the 16-high boxes plus the 5.5 stroke on each side with a gap left over. -->
+    <path d="M34 50h36"/>
+    <path d="M34 76h36"/>
+    <path d="M34 102h36"/>
+
+    <rect x="70" y="42" width="42" height="16" rx="5"/>
+    <rect x="70" y="68" width="42" height="16" rx="5"/>
+    <rect x="70" y="94" width="42" height="16" rx="5"/>
+  </g>
+</svg>

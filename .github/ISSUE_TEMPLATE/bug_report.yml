@@ -1,0 +1,68 @@
+name: Bug report
+description: Something in the tree or a task run did not behave as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Most problems come down to *which tasks were found* and *how they were grouped*,
+        and the diagnostics output answers both. Pasting it usually saves a round trip.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+      placeholder: |
+        Pressed the play button on "staging > api" and ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: >
+        Command Palette → **Task Hierarchy: Show Diagnostics**, then paste the output
+        channel here. It lists the tasks.json files found, how many tasks each held,
+        which are runnable, and what ran recently. Redact anything you would rather not
+        share — paths and task names are enough on their own.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: task
+    attributes:
+      label: The task involved
+      description: The entry from tasks.json, if the problem is about one task in particular.
+      render: jsonc
+      placeholder: |
+        {
+          "label": "deploy api",
+          "type": "shell",
+          "command": "./deploy.sh",
+          "detail": "@env:production @service:api"
+        }
+
+  - type: dropdown
+    id: workspace-shape
+    attributes:
+      label: How is the workspace open?
+      description: This changes which tasks VS Code itself loads, and it matters more than it sounds.
+      options:
+        - The project itself is the open folder
+        - A parent folder containing several projects is open
+        - A multi-root .code-workspace
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Extension version, and **Help → About** in VS Code.
+      placeholder: "Task Hierarchy 0.6.1, VS Code 1.137.0, macOS 15"
+    validations:
+      required: true

@@ -1,0 +1,15 @@
+.vscode/**
+src/**
+test/**
+node_modules/**
+esbuild.mjs
+tsconfig.json
+eslint.config.mjs
+.gitignore
+**/*.map
+out/**
+.github/**
+docs/**
+scripts/**
+media/marketplace-icon.svg
+media/screenshot.png

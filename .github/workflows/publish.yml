@@ -1,0 +1,153 @@
+# The only workflow that can reach a marketplace. Manual trigger, and gated behind the
+# "marketplace" GitHub Environment so a reviewer has to approve each run.
+#
+# It publishes the exact .vsix attached to an existing GitHub Release rather than
+# rebuilding, so what ships is byte-for-byte what was tested.
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish, e.g. v0.3.1'
+        required: true
+        type: string
+      target:
+        description: 'Where to publish'
+        required: true
+        default: marketplace
+        type: choice
+        options:
+          - marketplace
+          - open-vsx
+          - both
+      pre_release:
+        description: 'Publish as a pre-release version'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  # Required for the GitHub OIDC token that azure/login federates against Entra ID.
+  id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.tag }} to ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    # Configure this environment with required reviewers in repo Settings ->
+    # Environments. That approval prompt is what stops an accidental publish, and it is
+    # also where the credentials live, so nothing else in the repo can reach them.
+    environment: marketplace
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Publishing the release asset, not a fresh build: the bytes people tried are the
+      # bytes that ship, and a rebuild here could differ from the one that was reviewed.
+      - name: Download the .vsix from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.tag }}" --pattern '*.vsix' --dir dist-release
+          ls -la dist-release
+          count=$(ls dist-release/*.vsix | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Expected exactly one .vsix on ${{ inputs.tag }}, found ${count}."
+            exit 1
+          fi
+          echo "VSIX=$(ls dist-release/*.vsix)" >> "$GITHUB_ENV"
+
+      - name: Confirm the package matches the tag
+        run: |
+          tag_version="${TAG#v}"
+          case "$VSIX" in
+            *"-${tag_version}.vsix") echo "Publishing ${VSIX}." ;;
+            *) echo "::error::${VSIX} does not look like version ${tag_version}."; exit 1 ;;
+          esac
+        env:
+          TAG: ${{ inputs.tag }}
+
+      # --- Marketplace -----------------------------------------------------------
+      # Preferred: Microsoft Entra ID with workload identity federation. No stored
+      # secret - azure/login exchanges this run's OIDC token for an Azure session, and
+      # vsce reuses that session. Set AZURE_CLIENT_ID / AZURE_TENANT_ID on the
+      # environment to switch this on.
+      - name: Sign in to Azure (Entra ID federated credential)
+        if: ${{ inputs.target != 'open-vsx' && vars.AZURE_CLIENT_ID != '' }}
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          # The identity only needs to exist in the directory and be a member of the
+          # Marketplace publisher; it does not need access to an Azure subscription.
+          allow-no-subscriptions: true
+
+      - name: Publish to the VS Code Marketplace (Entra ID)
+        if: ${{ inputs.target != 'open-vsx' && vars.AZURE_CLIENT_ID != '' }}
+        run: |
+          npx @vscode/vsce publish \
+            --azure-credential \
+            --packagePath "$VSIX" \
+            ${{ inputs.pre_release && '--pre-release' || '' }}
+
+      # Fallback while migrating: an organization-scoped Azure DevOps PAT with the
+      # Marketplace > Manage scope. Global PATs are retired on 2026-12-01; an org-scoped
+      # one keeps working, but Entra above is the path Microsoft points at.
+      #
+      # Whether the secret exists is checked in the step body rather than in `if:` -
+      # `secrets` is not an available context in a step condition, and using it there
+      # fails the whole workflow file at validation rather than at run time.
+      - name: Publish to the VS Code Marketplace (PAT)
+        if: ${{ inputs.target != 'open-vsx' && vars.AZURE_CLIENT_ID == '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::error::No Marketplace credentials on the 'marketplace' environment."
+            echo "Set AZURE_CLIENT_ID and AZURE_TENANT_ID (variables) for Entra ID,"
+            echo "or VSCE_PAT (secret) for an organization-scoped Azure DevOps PAT."
+            echo "See docs/PUBLISHING.md."
+            exit 1
+          fi
+          npx @vscode/vsce publish \
+            --packagePath "$VSIX" \
+            ${{ inputs.pre_release && '--pre-release' || '' }}
+
+      # --- Open VSX --------------------------------------------------------------
+      # A separate registry, used by VSCodium, Cursor, Gitpod and others. Its tokens are
+      # its own and are unaffected by the Azure DevOps PAT retirement.
+      - name: Publish to Open VSX
+        if: ${{ inputs.target != 'marketplace' }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::error::OVSX_PAT is not set on the 'marketplace' environment."
+            exit 1
+          fi
+          npx ovsx publish "$VSIX" --pat "$OVSX_PAT"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Published ${{ inputs.tag }}"
+            echo
+            echo "- Package: \`$(basename "$VSIX")\`"
+            echo "- Target: ${{ inputs.target }}"
+            echo "- Pre-release: ${{ inputs.pre_release }}"
+          } >> "$GITHUB_STEP_SUMMARY"
