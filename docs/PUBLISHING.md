@@ -25,8 +25,8 @@ code --install-extension task-hierarchy.vsix --force
 **From a release:**
 
 ```sh
-gh release download v0.3.1 --pattern '*.vsix'
-code --install-extension task-hierarchy-0.3.1.vsix --force
+gh release download v1.0.0 --pattern '*.vsix'
+code --install-extension vscode-task-hierarchy-1.0.0.vsix --force
 ```
 
 Reload the window afterwards (`Cmd+Shift+P` → Developer: Reload Window).
@@ -149,13 +149,9 @@ workflow's `target` input then sends a release to `open-vsx`, or to `both`. It c
 the namespace if needed and publishes the `.vsix` attached to the release, so both
 registries get the same bytes.
 
-## Still outstanding
+## Nice to have
 
-- **A 128×128 PNG icon.** The listing wants one, and `vsce` refuses to publish
-  user-provided SVGs, so `media/icon.svg` cannot double as the marketplace icon. The
-  activity-bar icon stays SVG — that restriction is about listing content, not view
-  icons.
-- **A README screenshot.** The README is the listing's landing page, and the ASCII tree
-  near the top is a placeholder for a real screenshot of the view.
-- **`repository` in package.json** must point at the real repo before the first publish;
-  the Marketplace links it from the listing.
+- **A short GIF of the view in use.** For something interactive this sells the extension
+  far better than the static screenshot does — the tree expanding, a task running, the
+  tick appearing. Put it in `media/` and reference it by absolute URL, as the screenshot
+  is; a relative path renders on GitHub and breaks on the listing page.
