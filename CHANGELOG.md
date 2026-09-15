@@ -1,15 +1,5 @@
 # Changelog
 
-## 1.0.1
-
-- **Task labels are no longer rewritten by default.** Removing from a label the parts its
-  levels already state sounds tidy and often is not: `npm: test`, `npm: lint` and
-  `npm: package` under levels named test, lint and package all became `npm` — the
-  informative half stripped, the generic half kept. The tags decide where a task sits;
-  they no longer change what it is called. `taskHierarchy.shortenLabels` turns it back on.
-- When shortening is on, a label that would no longer tell two tasks apart is left in
-  full, so it can no longer make the tree ambiguous.
-
 ## 1.0.0
 
 First release.
@@ -28,6 +18,9 @@ First release.
 - **Each task shows its last run** — how long it took, how long ago, and a mark if it
   failed. Clicking one shows the detail; a failure raises a notification naming the task.
 - **Filter** across labels, descriptions and tags.
+- **Labels are shown exactly as written.** The tags decide where a task sits, not what it
+  is called. `taskHierarchy.shortenLabels` will trim the parts a task's levels already
+  state, and leaves a label in full if trimming it would stop telling two tasks apart.
 - **Annotate Tasks from Labels…** derives tags from label conventions you already use,
   as one reviewed, undoable edit.
 

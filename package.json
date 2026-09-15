@@ -2,7 +2,7 @@
   "name": "vscode-task-hierarchy",
   "displayName": "Task Hierarchy",
   "description": "Group your VS Code tasks into a tree and run them from the sidebar. Tag a task's detail with @name:value - the order you write them is the nesting.",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "publisher": "SMIITSolutionsInc",
   "license": "MIT",
   "icon": "media/icon.png",
