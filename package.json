@@ -1,8 +1,8 @@
 {
   "name": "vscode-task-hierarchy",
   "displayName": "Task Hierarchy",
-  "description": "Browse and run VS Code tasks in a hierarchical tree. Tag a task's detail with @name:value and the tag order becomes the nesting.",
-  "version": "0.6.1",
+  "description": "Group your VS Code tasks into a tree and run them from the sidebar. Tag a task's detail with @name:value - the order you write them is the nesting.",
+  "version": "1.0.0",
   "publisher": "SMIITSolutionsInc",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -20,9 +20,12 @@
   "keywords": [
     "tasks",
     "task runner",
-    "tree",
-    "grouping",
-    "monorepo"
+    "task explorer",
+    "tasks.json",
+    "npm scripts",
+    "build",
+    "monorepo",
+    "tree view"
   ],
   "repository": {
     "type": "git",
@@ -514,5 +517,6 @@
     "eslint": "^9.0.0",
     "js-yaml": "4.1.0",
     "typescript": "^5.6.0"
-  }
+  },
+  "qna": false
 }
