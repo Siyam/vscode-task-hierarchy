@@ -20,7 +20,7 @@ export function readSettings(): Settings {
 
     return {
         ungroupedLabel: config.get<string>('ungroupedLabel', 'Ungrouped'),
-        shortenLabels: config.get<boolean>('shortenLabels', true),
+        shortenLabels: config.get<boolean>('shortenLabels', false),
         collapseSingleChildGroups: config.get<boolean>('collapseSingleChildGroups', false),
         // Decided per refresh from the number of distinct project folders actually found,
         // so the caller overrides this; `auto` cannot be answered from settings alone.

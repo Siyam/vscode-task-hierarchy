@@ -65,10 +65,8 @@ and is shown beside it in the tree.
 - **A task with no tags at all** collects in an `Ungrouped` node, listed last.
 - **A tag can carry several values.** `@tenant:acme,globex` puts the task under both;
   running the group still starts it only once.
-- **Leaf labels are shortened** by removing tag values the ancestors already state, so
-  `publish: web-api (staging)` reads as `publish` under **staging ›
-  web-api**. If that would leave nothing, the full label is kept
-  (`taskHierarchy.shortenLabels`).
+- **Labels are shown exactly as written.** The tags decide where a task sits; they do not
+  change what it is called. [Shortening](#shortening-labels) is available but off.
 - **Sibling order** is alphabetical. `taskHierarchy.sortTagValues` overrides it per
   level, which is how you get `staging` before `production` rather than the reverse.
 
@@ -234,6 +232,18 @@ what this does not do. It is shown with a warning and an **Add Project Folder to
 Workspace** action, after which VS Code loads the file and runs it properly. Its
 individual steps still run on their own.
 
+### Shortening labels
+
+`taskHierarchy.shortenLabels` removes from a label the parts its levels already state, so
+`publish: api (staging)` reads as `publish` under **staging › api**. It is off by
+default: the label in `tasks.json` is what you wrote, and quietly rewriting it is
+surprising.
+
+It also is not always an improvement. `npm: test` under a level named `test` shortens to
+`npm` — the informative half removed and the generic half kept. Any label that would no
+longer tell two tasks apart is left in full, so turning this on cannot make the tree
+ambiguous, only occasionally blunt.
+
 ## Run status
 
 Once a task has run, the tree shows what happened beside it: how long it took and how
@@ -276,7 +286,7 @@ Nothing below has to be set for the tree to work — the tags in `tasks.json` ar
 | `taskHierarchy.tagValueIcons` | *empty* | Codicon for one `name:value`, overriding the level — see [Icons](#icons) |
 | `taskHierarchy.sortTagValues` | *empty* | Sibling order within a level — see [Icons](#icons) |
 | `taskHierarchy.derivationRules` | *empty* | Regexes for bulk annotation; rule order is the hierarchy |
-| `taskHierarchy.shortenLabels` | `true` | Strip ancestor tag values from leaf labels |
+| `taskHierarchy.shortenLabels` | `false` | Strip ancestor tag values from leaf labels |
 | `taskHierarchy.ungroupedLabel` | `Ungrouped` | Name of the bucket for untagged tasks |
 | `taskHierarchy.hideUnannotatedTasks` | `false` | Omit untagged tasks entirely |
 | `taskHierarchy.collapseSingleChildGroups` | `false` | Merge single-child chains into `a › b` |

@@ -49,7 +49,7 @@ test('tag order is the hierarchy', () => {
     assert.deepEqual(labels((staging as GroupNode<GroupableTask>).children), ['acme', 'globex']);
     // staging > acme > web-api > the task itself, four levels down.
     const service = group(group(staging, 'acme'), 'web-api');
-    assert.deepEqual(labels(service.children), ['publish api']);
+    assert.deepEqual(labels(service.children), ['publish api (staging)']);
     assert.equal(service.children[0].kind, 'task');
 });
 
@@ -152,6 +152,40 @@ test('sortTagValues orders siblings, unknown values alphabetically after', () =>
         options({ sortTagValues: { env: ['local', 'staging', 'production'] } })
     );
     assert.deepEqual(labels(roots), ['local', 'staging', 'production', 'sandbox']);
+});
+
+test('labels are left exactly as written by default', () => {
+    // The hierarchy comes from the tags; the label is the author's and is not rewritten
+    // unless shortening is asked for.
+    const roots = buildTree(
+        [task('publish: web-api (staging)', '@env:staging @service:web-api')],
+        options()
+    );
+    assert.equal(group(roots[0], 'web-api').children[0].label, 'publish: web-api (staging)');
+});
+
+test('shortening that would make two tasks look alike is undone', () => {
+    // Stripping the level's name can take the informative half and leave the generic
+    // one: three different npm tasks all becoming "npm" is worse than three long labels.
+    const roots = buildTree(
+        [
+            task('npm: test', '@stage:verify @action:test'),
+            task('npm: lint', '@stage:verify @action:lint'),
+            task('build: api', '@stage:develop @action:build'),
+        ],
+        options({ shortenLabels: true })
+    );
+
+    const verify = roots.find((r) => r.label === 'verify')!;
+    assert.deepEqual(
+        labels(group(verify, 'test').children).concat(labels(group(verify, 'lint').children)),
+        ['npm: test', 'npm: lint'],
+        'both would have been "npm", so both keep their full label'
+    );
+
+    // "build: api" shortens to "api", which still names one task, so it stays short.
+    const develop = roots.find((r) => r.label === 'develop')!;
+    assert.deepEqual(labels(group(develop, 'build').children), ['api']);
 });
 
 test('leaf labels drop the tag values their ancestors already state', () => {

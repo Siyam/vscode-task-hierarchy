@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1
+
+- **Task labels are no longer rewritten by default.** Removing from a label the parts its
+  levels already state sounds tidy and often is not: `npm: test`, `npm: lint` and
+  `npm: package` under levels named test, lint and package all became `npm` — the
+  informative half stripped, the generic half kept. The tags decide where a task sits;
+  they no longer change what it is called. `taskHierarchy.shortenLabels` turns it back on.
+- When shortening is on, a label that would no longer tell two tasks apart is left in
+  full, so it can no longer make the tree ambiguous.
+
 ## 1.0.0
 
 First release.

@@ -2,7 +2,7 @@
   "name": "vscode-task-hierarchy",
   "displayName": "Task Hierarchy",
   "description": "Group your VS Code tasks into a tree and run them from the sidebar. Tag a task's detail with @name:value - the order you write them is the nesting.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "SMIITSolutionsInc",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -359,8 +359,8 @@
         },
         "taskHierarchy.shortenLabels": {
           "type": "boolean",
-          "default": true,
-          "markdownDescription": "Strip facet values already implied by a task's ancestor groups from its leaf label, so `publish: web-api (staging)` shows as `publish` under **staging \u203a web-api**.",
+          "default": false,
+          "markdownDescription": "Strip from a task's label the parts its ancestor levels already state, so `publish: api (staging)` reads as `publish` under **staging \u203a api**. Off by default, because the label in `tasks.json` is what you wrote. A label that would no longer tell two tasks apart is left in full.",
           "scope": "resource"
         },
         "taskHierarchy.collapseSingleChildGroups": {

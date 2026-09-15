@@ -53,6 +53,10 @@ export type TreeNode<T extends GroupableTask> = GroupNode<T> | TaskNode<T>;
 export interface BuildOptions {
     /** Name of the node collecting tasks with no tags at all. */
     readonly ungroupedLabel: string;
+    /**
+     * Strip from a leaf label the parts its ancestors already state. Off by default: the
+     * label in tasks.json is what the author wrote, and rewriting it surprises people.
+     */
     readonly shortenLabels: boolean;
     readonly collapseSingleChildGroups: boolean;
     readonly groupByFolder: boolean;
@@ -63,7 +67,7 @@ export interface BuildOptions {
 
 export const DEFAULT_BUILD_OPTIONS: BuildOptions = {
     ungroupedLabel: 'Ungrouped',
-    shortenLabels: true,
+    shortenLabels: false,
     collapseSingleChildGroups: false,
     groupByFolder: false,
     hideUnannotatedTasks: false,
@@ -78,10 +82,13 @@ export function buildTree<T extends GroupableTask>(
         ? tasks.filter((task) => task.tags.length > 0)
         : tasks;
 
-    const roots = options.groupByFolder
+    let roots = options.groupByFolder
         ? groupByFolder(visible, options)
         : group(visible, 0, [], 'root', options);
 
+    if (options.shortenLabels) {
+        roots = disambiguate(roots);
+    }
     return options.collapseSingleChildGroups ? roots.map(collapse) : roots;
 }
 
@@ -254,6 +261,45 @@ export function shortenLabel(label: string, path: readonly PathSegment[]): strin
         .trim();
 
     return tidied.length > 0 ? tidied : label;
+}
+
+/**
+ * Undo shortening wherever it made two different tasks look the same.
+ *
+ * Removing the part of a label an ancestor already states can take the informative half
+ * and leave the generic one: `npm: test`, `npm: lint` and `npm: package` all shorten to
+ * `npm` under levels named test, lint and package. A label that no longer tells one task
+ * from another is worse than a long one, so those go back to what the file says.
+ */
+function disambiguate<T extends GroupableTask>(roots: readonly TreeNode<T>[]): TreeNode<T>[] {
+    const taskIdsByLabel = new Map<string, Set<string>>();
+    const visit = (node: TreeNode<T>): void => {
+        if (node.kind === 'task') {
+            const ids = taskIdsByLabel.get(node.label) ?? new Set<string>();
+            // Counted by task id, so one task shown under two values of a tag is not a clash.
+            ids.add(node.task.id);
+            taskIdsByLabel.set(node.label, ids);
+            return;
+        }
+        node.children.forEach(visit);
+    };
+    roots.forEach(visit);
+
+    const ambiguous = new Set(
+        [...taskIdsByLabel.entries()].filter(([, ids]) => ids.size > 1).map(([label]) => label)
+    );
+    if (ambiguous.size === 0) {
+        return [...roots];
+    }
+
+    const rewrite = (node: TreeNode<T>): TreeNode<T> =>
+        node.kind === 'task'
+            ? ambiguous.has(node.label)
+                ? { ...node, label: node.task.label }
+                : node
+            : { ...node, children: node.children.map(rewrite) };
+
+    return roots.map(rewrite);
 }
 
 /** Merge a chain of single-child groups into one node, e.g. `staging > acme`. */
