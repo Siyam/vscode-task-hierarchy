@@ -7,6 +7,7 @@ npm test               # unit tests, plus a load test of the built bundle
 npm run lint
 npm run install-local  # package and install into the local VS Code, then reload the window
 npm run package        # vsce package -> .vsix only
+npm run publish-openvsx  # publish to Open VSX (needs OVSX_PAT)
 ```
 
 `npm test` includes `test/bundle.smoke.js`, which loads `dist/extension.js` with `vscode`

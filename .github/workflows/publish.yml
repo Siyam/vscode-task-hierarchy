@@ -129,8 +129,9 @@ jobs:
             ${{ inputs.pre_release && '--pre-release' || '' }}
 
       # --- Open VSX --------------------------------------------------------------
-      # A separate registry, used by VSCodium, Cursor, Gitpod and others. Its tokens are
-      # its own and are unaffected by the Azure DevOps PAT retirement.
+      # A separate registry, used by VSCodium, Cursor, Gitpod and others - they cannot
+      # reach the Microsoft Marketplace at all. Its tokens are its own and are unaffected
+      # by the Azure DevOps PAT retirement.
       - name: Publish to Open VSX
         if: ${{ inputs.target != 'marketplace' }}
         env:
@@ -138,9 +139,23 @@ jobs:
         run: |
           if [ -z "$OVSX_PAT" ]; then
             echo "::error::OVSX_PAT is not set on the 'marketplace' environment."
+            echo "Create a token at https://open-vsx.org (Avatar > Settings > Access Tokens)."
+            echo "See docs/PUBLISHING.md."
             exit 1
           fi
-          npx ovsx publish "$VSIX" --pat "$OVSX_PAT"
+
+          namespace="$(node -p "require('./package.json').publisher")"
+
+          # The namespace has to exist before anything can be published into it, and
+          # creating one that already exists is an error rather than a no-op - so a
+          # failure here is only fatal if the namespace genuinely is not there.
+          if npx ovsx create-namespace "$namespace" -p "$OVSX_PAT" 2>/dev/null; then
+            echo "Created the '$namespace' namespace."
+          else
+            echo "Namespace '$namespace' already exists, or could not be created; continuing."
+          fi
+
+          npx ovsx publish "$VSIX" -p "$OVSX_PAT"
 
       - name: Summary
         run: |

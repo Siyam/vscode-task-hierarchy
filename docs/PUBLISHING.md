@@ -105,13 +105,49 @@ switches over with no workflow change.
 
 ## Open VSX
 
-VSCodium, Cursor, Gitpod and others cannot reach the Microsoft Marketplace and use
-[Open VSX](https://open-vsx.org) instead. Its tokens are its own and are unaffected by
-the Azure DevOps retirement.
+VSCodium, **Cursor**, Windsurf and Gitpod cannot reach the Microsoft Marketplace at all —
+they install from [Open VSX](https://open-vsx.org). Publishing there is a separate
+release, not a mirror, and it is usually the larger reachable audience of the two.
 
-Create a publisher and an access token at open-vsx.org, sign the publisher agreement,
-then add the token as an `OVSX_PAT` secret on the `marketplace` environment. The Publish
-workflow's **target** input sends a release to one registry or both.
+Its tokens are its own and are unaffected by the Azure DevOps PAT retirement.
+
+### First time
+
+1. **Create an Eclipse account** at
+   [accounts.eclipse.org](https://accounts.eclipse.org/user/register). Fill in the
+   **GitHub Username** field, with the same GitHub account you will use to log in to
+   open-vsx.org — the Publisher Agreement is matched on it, and a mismatch is the usual
+   reason publishing is refused later.
+2. **Sign the Publisher Agreement.** Log in to [open-vsx.org](https://open-vsx.org) with
+   GitHub, then Settings → *Log in with Eclipse* → **Show Publisher Agreement** → Agree.
+3. **Create an access token.** Avatar → Settings → Access Tokens → Generate New Token.
+   The value is shown once and never again.
+4. **Publish**, which also creates the namespace if it does not exist:
+
+   ```sh
+   OVSX_PAT=<token> npm run publish-openvsx
+   ```
+
+   The namespace has to match `publisher` in package.json — `SMIITSolutionsInc`.
+
+Afterwards it lives at
+`https://open-vsx.org/extension/SMIITSolutionsInc/vscode-task-hierarchy`.
+
+### Verifying the namespace
+
+Creating a namespace makes you a **contributor** to it, not its verified owner, and
+extensions in an unverified namespace carry a *"not a verified publisher"* notice on
+their listing. Removing that means claiming ownership, which is a separate request:
+[Managing Namespaces](https://github.com/EclipseFdn/open-vsx.org/wiki/Managing-Namespaces).
+Worth doing before the extension gets much traffic — the notice reads badly to anyone
+deciding whether to install.
+
+### From CI
+
+Add the token as an `OVSX_PAT` secret on the `marketplace` environment. The **Publish**
+workflow's `target` input then sends a release to `open-vsx`, or to `both`. It creates
+the namespace if needed and publishes the `.vsix` attached to the release, so both
+registries get the same bytes.
 
 ## Still outstanding
 
