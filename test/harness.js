@@ -63,7 +63,12 @@ function excludedSegments(excludePattern) {
     return new Set(match ? match[1].split(',').map((s) => s.trim()) : []);
 }
 
-function walkForTasksJson(root, excluded, found, cap) {
+/** Filename the include glob is asking for, e.g. "**\/.vscode/launch.json" -> launch.json. */
+function targetFileName(include) {
+    return path.basename(String(include ?? 'tasks.json'));
+}
+
+function walkForTasksJson(root, excluded, found, cap, fileName) {
     if (found.length >= cap) {
         return;
     }
@@ -82,13 +87,13 @@ function walkForTasksJson(root, excluded, found, cap) {
         }
         const dir = path.join(root, entry.name);
         if (entry.name === '.vscode') {
-            const candidate = path.join(dir, 'tasks.json');
+            const candidate = path.join(dir, fileName);
             if (fs.existsSync(candidate)) {
                 found.push(candidate);
             }
             continue;
         }
-        walkForTasksJson(dir, excluded, found, cap);
+        walkForTasksJson(dir, excluded, found, cap, fileName);
     }
 }
 
@@ -117,8 +122,9 @@ function makeVscodeStub({ folders = [], nativeTasks = [], settings = {} } = {}) 
             findFiles: async (include, exclude, maxResults) => {
                 const excluded = excludedSegments(exclude);
                 const found = [];
+                const fileName = targetFileName(include);
                 for (const folder of folders) {
-                    walkForTasksJson(folder, excluded, found, maxResults ?? 1000);
+                    walkForTasksJson(folder, excluded, found, maxResults ?? 1000, fileName);
                 }
                 return found.map(makeUri);
             },
